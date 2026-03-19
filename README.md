@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BusyBee — South Africa's Student Hiring Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bee: {
+              gold: '#F5A623',
+              amber: '#E8940F',
+              light: '#FEF3DC',
+              dark: '#1A1A1A',
+              charcoal: '#2C2C2C',
+              grey: '#F5F4F1',
+              muted: '#8A8A8A',
+              border: '#E8E6E0',
+            }
+          },
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+          animation: {
+            'fade-up': 'fadeUp 0.6s ease forwards',
+            'fade-in': 'fadeIn 0.5s ease forwards',
+            'pulse-slow': 'pulse 3s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeUp: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #FAFAF8; color: #1A1A1A; margin: 0; padding: 0; }
+    h1, h2, h3, h4, h5 { font-family: 'Syne', sans-serif; }
+    .hexagon { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+    .gradient-text { background: linear-gradient(135deg, #F5A623 0%, #E8940F 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+    .nav-link { position: relative; }
+    .nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: #F5A623; transition: width 0.3s ease; }
+    .nav-link:hover::after { width: 100%; }
+    .score-ring { background: conic-gradient(#F5A623 0% var(--pct), #E8E6E0 var(--pct) 100%); }
+    .mesh-bg { background-image: radial-gradient(at 20% 50%, rgba(245,166,35,0.08) 0px, transparent 50%), radial-gradient(at 80% 20%, rgba(245,166,35,0.05) 0px, transparent 50%), radial-gradient(at 60% 80%, rgba(26,26,26,0.04) 0px, transparent 50%); }
+    .dark-mesh { background-image: radial-gradient(at 20% 50%, rgba(245,166,35,0.12) 0px, transparent 50%), radial-gradient(at 80% 20%, rgba(245,166,35,0.08) 0px, transparent 50%); }
+    .progress-bar { transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+    .tab-active { background: #1A1A1A; color: #FAFAF8; }
+    .tab-inactive { background: transparent; color: #8A8A8A; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F5F4F1; }
+    ::-webkit-scrollbar-thumb { background: #E8940F; border-radius: 3px; }
+    .dot-pattern { background-image: radial-gradient(circle, #1A1A1A 1px, transparent 1px); background-size: 24px 24px; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 2s infinite; }
+    @media (max-width: 768px) { .hero-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─────────────────────────────────────────────
+   MOCK DATA — Edit freely
+───────────────────────────────────────────── */
+const MOCK_CANDIDATES = [
+  {
+    id: 1, name: "Amahle Dlamini", role: "Hospitality Management Student",
+    university: "Cape Peninsula University of Technology", year: "3rd Year",
+    beeScore: 87, verified: true, available: "Weekends + Holidays",
+    skills: ["Customer Service","F&B Operations","Event Coordination","Barista"],
+    location: "Cape Town", gpa: "65%", completeness: 94,
+    avatar: "AD", color: "#F5A623"
+  },
+  {
+    id: 2, name: "Liam van der Berg", role: "BCom Marketing Graduate",
+    university: "University of Cape Town", year: "Recent Graduate",
+    beeScore: 79, verified: true, available: "Full-Time",
+    skills: ["Digital Marketing","Social Media","Excel","Brand Strategy"],
+    location: "Cape Town", gpa: "72%", completeness: 88,
+    avatar: "LV", color: "#2C7A7B"
+  },
+  {
+    id: 3, name: "Kefilwe Mokoena", role: "Retail Business Student",
+    university: "University of the Western Cape", year: "2nd Year",
+    beeScore: 73, verified: false, available: "Part-Time",
+    skills: ["Retail Sales","POS Systems","Stock Control","Customer Handling"],
+    location: "Cape Town", gpa: "58%", completeness: 76,
+    avatar: "KM", color: "#6366F1"
+  },
+  {
+    id: 4, name: "Ethan Kruger", role: "Tourism & Events Student",
+    university: "Stellenbosch University", year: "Final Year",
+    beeScore: 91, verified: true, available: "Flexible",
+    skills: ["Tour Operations","Event Planning","Xhosa (Basic)","First Aid"],
+    location: "Cape Town / Stellenbosch", gpa: "79%", completeness: 98,
+    avatar: "EK", color: "#E8940F"
+  },
+];
+
+const BEESCORE_FACTORS = [
+  { label: "Profile Completeness", value: 94, desc: "All sections filled and up to date" },
+  { label: "Verified Documents", value: 100, desc: "ID, transcript and registration confirmed" },
+  { label: "Work Readiness", value: 82, desc: "Skills, availability and prep completed" },
+  { label: "Education Quality", value: 88, desc: "Institution, GPA and year of study" },
+  { label: "Skills Alignment", value: 79, desc: "Matched to active employer demand" },
+  { label: "Platform Engagement", value: 70, desc: "Course completions and activity score" },
+];
+
+const STUDENT_PROFILE = {
+  name: "Amahle Dlamini",
+  role: "Hospitality Management Student",
+  university: "Cape Peninsula University of Technology",
+  year: "3rd Year — expected completion 2026",
+  beeScore: 87,
+  completeness: 94,
+  location: "Cape Town, Western Cape",
+  available: "Weekends & Public Holidays",
+  phone: "+27 71 ••• ••••",
+  email: "a.dlamini@•••.co.za",
+  skills: ["Customer Service","Food & Beverage","Event Coordination","Barista Certified","POS Systems","Team Leadership"],
+  improvements: [
+    { tip: "Complete 1 more prep module", points: "+4 pts" },
+    { tip: "Upload work reference letter", points: "+3 pts" },
+    { tip: "Add portfolio or work sample", points: "+2 pts" },
+  ],
+  verified: ["National ID","Proof of Registration","Academic Transcript","CV / Work History"],
+  experience: [
+    { role: "Front-of-House Intern", company: "The Twelve Apostles Hotel", period: "Nov 2023 – Jan 2024" },
+    { role: "Event Volunteer", company: "Cape Town International Jazz Festival", period: "March 2023" },
+  ]
+};
+
+/* ─────────────────────────────────────────────
+   NAVBAR
+───────────────────────────────────────────── */
+function Navbar() {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+  const links = [
+    { label: "How it Works", href: "#how-it-works" },
+    { label: "BeeScore", href: "#beescore" },
+    { label: "For Employers", href: "#employer-demo" },
+    { label: "For Students", href: "#student-demo" },
+    { label: "About", href: "#why-busybee" },
+  ];
+  return (
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-bee-border' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <a href="#" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 bg-bee-gold rounded-lg flex items-center justify-center">
+            <span className="text-bee-dark font-display font-800 text-sm">B</span>
+          </div>
+          <span className="font-display font-700 text-xl text-bee-dark tracking-tight">BusyBee</span>
+        </a>
+        <div className="hidden md:flex items-center gap-8">
+          {links.map(l => (
+            <a key={l.label} href={l.href} className="nav-link text-sm font-medium text-bee-charcoal hover:text-bee-dark transition-colors">{l.label}</a>
+          ))}
+        </div>
+        <div className="hidden md:flex items-center gap-3">
+          <a href="#waitlist" className="text-sm font-medium text-bee-charcoal hover:text-bee-dark transition-colors px-4 py-2">Sign In</a>
+          <a href="#waitlist" className="text-sm font-medium bg-bee-gold text-bee-dark px-5 py-2.5 rounded-lg hover:bg-bee-amber transition-colors font-semibold">Get Early Access</a>
+        </div>
+        <button className="md:hidden text-bee-dark" onClick={() => setOpen(!open)}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {open ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
+          </svg>
+        </button>
+      </div>
+      {open && (
+        <div className="md:hidden bg-white border-t border-bee-border px-6 py-4 space-y-3">
+          {links.map(l => (
+            <a key={l.label} href={l.href} onClick={() => setOpen(false)} className="block text-sm font-medium text-bee-charcoal hover:text-bee-dark py-2">{l.label}</a>
+          ))}
+          <a href="#waitlist" className="block text-center bg-bee-gold text-bee-dark font-semibold text-sm px-5 py-3 rounded-lg mt-2">Get Early Access</a>
+        </div>
+      )}
+    </nav>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   HERO
+───────────────────────────────────────────── */
+function Hero() {
+  return (
+    <section className="relative min-h-screen mesh-bg flex items-center pt-20 overflow-hidden">
+      <div className="absolute inset-0 dot-pattern opacity-[0.03]" />
+      <div className="absolute top-1/4 right-0 w-96 h-96 bg-bee-gold/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-bee-gold/6 rounded-full blur-3xl" />
+      <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full relative z-10">
+        {/* Left Copy */}
+        <div className="space-y-8">
+          <div className="inline-flex items-center gap-2 bg-bee-light border border-bee-gold/30 text-bee-amber text-xs font-semibold px-4 py-2 rounded-full">
+            <span className="w-1.5 h-1.5 bg-bee-gold rounded-full animate-pulse-slow inline-block" />
+            Now in Early Access — Cape Town, South Africa
+          </div>
+          <h1 className="font-display text-5xl lg:text-6xl xl:text-7xl font-800 text-bee-dark leading-[1.05] tracking-tight">
+            Hire student talent.<br />
+            <span className="gradient-text">Smarter. Faster.</span>
+          </h1>
+          <p className="text-lg lg:text-xl text-bee-muted font-300 leading-relaxed max-w-xl">
+            BusyBee connects South African students and graduates with employers who need them — using AI-driven matching, verified profiles, and our proprietary BeeScore to surface the best candidates first.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <a href="#waitlist" className="bg-bee-dark text-white font-semibold px-8 py-4 rounded-xl hover:bg-bee-charcoal transition-all text-sm text-center shadow-lg hover:shadow-xl">
+              Post a Role — It's Free
+            </a>
+            <a href="#student-demo" className="bg-white border border-bee-border text-bee-dark font-semibold px-8 py-4 rounded-xl hover:bg-bee-grey transition-all text-sm text-center shadow-sm">
+              View Student Demo ↗
+            </a>
+          </div>
+          <div className="flex items-center gap-8 pt-2">
+            <div>
+              <p className="font-display font-700 text-2xl text-bee-dark">2,400+</p>
+              <p className="text-xs text-bee-muted font-medium mt-0.5">Early student signups</p>
+            </div>
+            <div className="w-px h-10 bg-bee-border" />
+            <div>
+              <p className="font-display font-700 text-2xl text-bee-dark">180+</p>
+              <p className="text-xs text-bee-muted font-medium mt-0.5">Employers waitlisted</p>
+            </div>
+            <div className="w-px h-10 bg-bee-border" />
+            <div>
+              <p className="font-display font-700 text-2xl text-bee-dark">48h</p>
+              <p className="text-xs text-bee-muted font-medium mt-0.5">Avg. time to shortlist</p>
+            </div>
+          </div>
+        </div>
+        {/* Right Hero Product Mock */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-bee-gold/20 to-transparent rounded-3xl blur-2xl transform scale-110" />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-bee-border overflow-hidden">
+            <div className="bg-bee-dark px-5 py-3 flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+              </div>
+              <div className="flex-1 mx-4 bg-white/10 rounded-md px-3 py-1 text-xs text-white/50 font-mono">busybee.co.za / employer / search</div>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="flex items-center gap-2 pb-3 border-b border-bee-border">
+                <div className="bg-bee-light rounded-lg px-3 py-1.5 text-xs font-semibold text-bee-amber flex-1">Hospitality · Cape Town · Part-Time · BeeScore 75+</div>
+                <div className="bg-bee-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg">Search</div>
+              </div>
+              <p className="text-xs font-display font-600 text-bee-muted uppercase tracking-wider">Top Matches — 4 candidates</p>
+              {MOCK_CANDIDATES.slice(0,3).map(c => (
+                <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-bee-grey hover:bg-bee-light transition-colors cursor-pointer border border-transparent hover:border-bee-gold/30">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-display font-700 flex-shrink-0" style={{background: c.color}}>{c.avatar}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-bee-dark truncate">{c.name}</p>
+                    <p className="text-xs text-bee-muted truncate">{c.role}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {c.verified && <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">✓ Verified</span>}
+                    <div className="bg-bee-dark text-bee-gold text-xs font-display font-700 px-2 py-1 rounded-lg">{c.beeScore}</div>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-2 text-center text-xs text-bee-muted py-1">+ 1 more match available</div>
+            </div>
+          </div>
+          {/* Floating badge */}
+          <div className="absolute -bottom-4 -left-4 bg-white border border-bee-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 bg-bee-light rounded-lg flex items-center justify-center">
+              <span className="text-bee-gold font-display font-700 text-sm">⬡</span>
+            </div>
+            <div>
+              <p className="text-xs font-display font-700 text-bee-dark">BeeScore 87</p>
+              <p className="text-xs text-bee-muted">Top 8% of candidates</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   PROBLEM SECTION
+───────────────────────────────────────────── */
+function Problem() {
+  const employerProblems = [
+    { icon: "📋", title: "Buried in weak applications", desc: "Entry-level roles attract hundreds of CVs — most unverified, irrelevant, or incomplete." },
+    { icon: "⏱", title: "Slow, manual screening", desc: "Recruiters spend days filtering through unqualified candidates for junior positions." },
+    { icon: "🔍", title: "Hard to verify candidates", desc: "No easy way to confirm student credentials, work readiness, or availability." },
+    { icon: "💸", title: "Recruitment is too expensive", desc: "Traditional agencies charge high fees for roles that don't justify the cost." },
+  ];
+  const studentProblems = [
+    { icon: "👁", title: "Low visibility", desc: "Strong students get overlooked because they don't know how to package themselves." },
+    { icon: "📄", title: "Generic CVs", desc: "Without structure or signals, student CVs all look the same to employers." },
+    { icon: "🏅", title: "No trust signal", desc: "Employers can't tell who's reliable, available, and genuinely work-ready." },
+    { icon: "🚪", title: "No door-opener", desc: "Students lack connections, experience — and a platform designed for their stage." },
+  ];
+  return (
+    <section id="problem" className="py-24 bg-bee-dark relative overflow-hidden">
+      <div className="absolute inset-0 dark-mesh" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-bee-gold/30 to-transparent" />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="text-center mb-16">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">The Problem</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-white leading-tight">
+            Hiring entry-level talent is<br />broken on both sides.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Employer */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                <span className="text-lg">🏢</span>
+              </div>
+              <div>
+                <p className="text-white font-display font-600 text-lg">For Employers</p>
+                <p className="text-white/40 text-xs">Hiring managers & SMEs</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {employerProblems.map((p, i) => (
+                <div key={i} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                  <span className="text-xl flex-shrink-0 mt-0.5">{p.icon}</span>
+                  <div>
+                    <p className="text-white font-semibold text-sm mb-1">{p.title}</p>
+                    <p className="text-white/50 text-sm leading-relaxed">{p.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Students */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                <span className="text-lg">🎓</span>
+              </div>
+              <div>
+                <p className="text-white font-display font-600 text-lg">For Students</p>
+                <p className="text-white/40 text-xs">Students & recent graduates</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {studentProblems.map((p, i) => (
+                <div key={i} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                  <span className="text-xl flex-shrink-0 mt-0.5">{p.icon}</span>
+                  <div>
+                    <p className="text-white font-semibold text-sm mb-1">{p.title}</p>
+                    <p className="text-white/50 text-sm leading-relaxed">{p.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="mt-12 text-center">
+          <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
+            There is no platform built specifically for <span className="text-bee-gold font-semibold">South African student hiring</span> — one that gives employers verified signal and gives students the visibility they deserve.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   SOLUTION FLOW
+───────────────────────────────────────────── */
+function Solution() {
+  const steps = [
+    { num: "01", icon: "📝", title: "Students build rich profiles", desc: "Education, skills, availability, experience, and uploaded verification documents — all in one place." },
+    { num: "02", icon: "⬡", title: "BeeScore is calculated", desc: "Our proprietary algorithm ranks candidates on trust, readiness, and suitability — updated as profiles grow." },
+    { num: "03", icon: "🔎", title: "Employers search and filter", desc: "Define the role, set criteria, and instantly see a ranked shortlist of job-ready candidates." },
+    { num: "04", icon: "🤝", title: "Hiring gets faster", desc: "Connect with pre-screened, verified students — no recruiter markup, no weeks of sifting." },
+  ];
+  return (
+    <section id="solution" className="py-24 bg-bee-grey">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">The Solution</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight">
+            How BusyBee works
+          </h2>
+          <p className="text-bee-muted text-lg mt-4 max-w-xl mx-auto">A simple, intelligent hiring loop — built for the realities of student employment in South Africa.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {steps.map((s, i) => (
+            <div key={i} className="relative bg-white rounded-2xl p-6 border border-bee-border card-hover shadow-sm">
+              {i < steps.length - 1 && <div className="hidden lg:block absolute top-10 -right-3 w-6 h-px bg-bee-gold/40 z-10" />}
+              <div className="flex items-start gap-3 mb-4">
+                <span className="font-display font-700 text-bee-gold/40 text-4xl leading-none">{s.num}</span>
+              </div>
+              <div className="w-12 h-12 bg-bee-light rounded-xl flex items-center justify-center text-2xl mb-4">{s.icon}</div>
+              <h3 className="font-display font-600 text-bee-dark text-lg mb-2 leading-snug">{s.title}</h3>
+              <p className="text-bee-muted text-sm leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   BEESCORE SECTION
+───────────────────────────────────────────── */
+function BeeScore() {
+  const [animated, setAnimated] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([e]) => { if(e.isIntersecting) setAnimated(true); }, {threshold: 0.3});
+    if(ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <section id="beescore" ref={ref} className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Proprietary Algorithm</p>
+            <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight mb-6">
+              Meet the BeeScore —<br />your hiring signal.
+            </h2>
+            <p className="text-bee-muted text-lg leading-relaxed mb-6">
+              The BeeScore is BusyBee's trust and readiness score — a single number that tells employers how verified, complete, and work-ready a candidate is. It replaces gut feel with measurable signal.
+            </p>
+            <p className="text-bee-muted text-base leading-relaxed mb-8">
+              The exact algorithm is proprietary. But candidates can see their score, understand the broad factors, and actively improve over time through better profiles, document verification, and platform engagement.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {["Verified Trust","Objective Ranking","Continuously Updated","Improves Over Time","Employer-Facing"].map(t => (
+                <span key={t} className="bg-bee-light text-bee-amber border border-bee-gold/20 text-xs font-semibold px-3 py-1.5 rounded-full">{t}</span>
+              ))}
+            </div>
+          </div>
+          {/* Score Visual */}
+          <div className="space-y-4">
+            <div className="bg-bee-dark rounded-2xl p-6 text-white mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-white/50 text-xs uppercase tracking-wider font-semibold mb-1">Overall BeeScore</p>
+                  <p className="font-display font-800 text-5xl text-bee-gold">87</p>
+                  <p className="text-white/40 text-xs mt-1">Top 12% of candidates in your category</p>
+                </div>
+                <div className="text-right">
+                  <div className="w-20 h-20 relative">
+                    <svg viewBox="0 0 80 80" className="transform -rotate-90 w-full h-full">
+                      <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                      <circle cx="40" cy="40" r="32" fill="none" stroke="#F5A623" strokeWidth="8"
+                        strokeDasharray={`${animated ? (87/100 * 201.1) : 0} 201.1`}
+                        strokeLinecap="round"
+                        style={{transition: 'stroke-dasharray 1.4s cubic-bezier(0.4,0,0.2,1)'}} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-bee-gold font-display font-700 text-sm">87%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-xl px-4 py-2 text-xs text-white/50 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-bee-gold inline-block" />
+                Score updated 2 days ago · 3 improvements available
+              </div>
+            </div>
+            {/* Factor bars */}
+            <div className="bg-bee-grey rounded-2xl p-5 space-y-4">
+              <p className="font-display font-600 text-bee-dark text-sm uppercase tracking-wider mb-2">Score Factors (Broad Overview)</p>
+              {BEESCORE_FACTORS.map((f, i) => (
+                <div key={i}>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="text-sm font-medium text-bee-dark">{f.label}</span>
+                    <span className="text-sm font-display font-700 text-bee-amber">{f.value}</span>
+                  </div>
+                  <div className="h-2 bg-bee-border rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-bee-gold to-bee-amber rounded-full progress-bar"
+                      style={{width: animated ? `${f.value}%` : '0%'}} />
+                  </div>
+                  <p className="text-xs text-bee-muted mt-1">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   VERIFICATION SECTION
+───────────────────────────────────────────── */
+function Verification() {
+  const docs = [
+    { icon: "🪪", label: "National ID", desc: "Verifies legal identity and South African residency.", status: "Required" },
+    { icon: "🎓", label: "Proof of Registration", desc: "Confirms active student status at accredited institution.", status: "Required" },
+    { icon: "📊", label: "Academic Transcript", desc: "Establishes GPA, subjects and academic standing.", status: "Recommended" },
+    { icon: "📋", label: "CV / Work History", desc: "Prior experience, references and professional context.", status: "Recommended" },
+  ];
+  return (
+    <section id="verification" className="py-24 bg-bee-grey">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-4">
+            {docs.map((d, i) => (
+              <div key={i} className="bg-white rounded-xl p-5 border border-bee-border flex gap-4 items-start card-hover shadow-sm">
+                <div className="w-12 h-12 bg-bee-light rounded-xl flex items-center justify-center text-2xl flex-shrink-0">{d.icon}</div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold text-bee-dark text-sm">{d.label}</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${d.status === 'Required' ? 'bg-bee-dark text-bee-gold' : 'bg-green-50 text-green-700 border border-green-200'}`}>{d.status}</span>
+                  </div>
+                  <p className="text-bee-muted text-sm">{d.desc}</p>
+                </div>
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Profile Verification</p>
+            <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight mb-6">
+              Trust is built in,<br />not bolted on.
+            </h2>
+            <p className="text-bee-muted text-lg leading-relaxed mb-6">
+              Verification is optional — but it matters. Candidates who verify their identity and credentials appear as <span className="text-bee-dark font-semibold">Verified Profiles</span>, earn a higher BeeScore, and are significantly more visible to employers.
+            </p>
+            <div className="bg-bee-light border border-bee-gold/20 rounded-xl p-5 mb-8">
+              <p className="font-semibold text-bee-dark text-sm mb-2">🔒 Privacy-first approach</p>
+              <p className="text-bee-muted text-sm leading-relaxed">Documents are used solely for verification purposes. Candidates control what employers see. We never share sensitive personal documents without explicit consent.</p>
+            </div>
+            <div className="flex items-center gap-4 p-4 bg-white border border-bee-border rounded-xl">
+              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-xl">✓</div>
+              <div>
+                <p className="font-semibold text-bee-dark text-sm">Verified Badge on Profile</p>
+                <p className="text-bee-muted text-xs">Employers see immediately who is verified — building immediate trust at a glance.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   STUDENT PROFILE DEMO
+───────────────────────────────────────────── */
+function StudentDemo() {
+  const p = STUDENT_PROFILE;
+  return (
+    <section id="student-demo" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Student Experience</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight">
+            Your profile. Your credibility.
+          </h2>
+          <p className="text-bee-muted text-lg mt-4 max-w-xl mx-auto">Students build a structured, verifiable profile that makes them significantly easier to hire.</p>
+        </div>
+        {/* Profile UI */}
+        <div className="bg-bee-dark rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+          {/* Browser bar */}
+          <div className="flex items-center gap-2 px-5 py-3 bg-black/30 border-b border-white/10">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
+            </div>
+            <div className="flex-1 mx-4 bg-white/10 rounded-md px-3 py-1 text-xs text-white/40 font-mono">busybee.co.za / profile / amahle-dlamini</div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 min-h-96">
+            {/* Left sidebar */}
+            <div className="bg-white/5 border-r border-white/10 p-6 space-y-6">
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-2xl bg-bee-gold flex items-center justify-center text-bee-dark font-display font-800 text-2xl mx-auto mb-3">{p.avatar}</div>
+                <p className="font-display font-700 text-white text-lg">{p.name}</p>
+                <p className="text-white/50 text-xs mt-1">{p.role}</p>
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-medium">✓ Verified</span>
+                </div>
+              </div>
+              {/* BeeScore circle */}
+              <div className="bg-black/20 rounded-xl p-4 text-center border border-white/10">
+                <p className="text-white/40 text-xs uppercase tracking-wider font-semibold mb-2">BeeScore</p>
+                <p className="font-display font-800 text-5xl text-bee-gold mb-1">{p.beeScore}</p>
+                <p className="text-white/30 text-xs">Top 12% in Hospitality</p>
+              </div>
+              {/* Profile completeness */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <p className="text-white/60 text-xs font-semibold uppercase tracking-wider">Profile Complete</p>
+                  <p className="text-bee-gold text-xs font-display font-700">{p.completeness}%</p>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-bee-gold rounded-full" style={{width: `${p.completeness}%`}} />
+                </div>
+              </div>
+              {/* Quick info */}
+              <div className="space-y-2">
+                {[
+                  { icon: "📍", val: p.location },
+                  { icon: "⏰", val: p.available },
+                  { icon: "🎓", val: p.university },
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-2 text-xs text-white/50">
+                    <span>{item.icon}</span>
+                    <span>{item.val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Main content */}
+            <div className="col-span-2 p-6 space-y-6">
+              {/* Education */}
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wider font-semibold mb-3">Education</p>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="font-semibold text-white text-sm">{p.university}</p>
+                      <p className="text-white/50 text-xs mt-0.5">{p.role.split(' Student')[0]} — {p.year}</p>
+                    </div>
+                    <span className="text-bee-gold font-display font-700 text-sm">65%</span>
+                  </div>
+                </div>
+              </div>
+              {/* Work experience */}
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wider font-semibold mb-3">Work Experience</p>
+                <div className="space-y-2">
+                  {p.experience.map((e, i) => (
+                    <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-white text-sm">{e.role}</p>
+                        <p className="text-white/50 text-xs mt-0.5">{e.company}</p>
+                      </div>
+                      <span className="text-white/30 text-xs whitespace-nowrap ml-4">{e.period}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Skills */}
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wider font-semibold mb-3">Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {p.skills.map(s => (
+                    <span key={s} className="bg-white/10 border border-white/10 text-white/70 text-xs px-3 py-1.5 rounded-full font-medium hover:bg-bee-gold/20 hover:text-bee-gold hover:border-bee-gold/30 transition-colors cursor-default">{s}</span>
+                  ))}
+                </div>
+              </div>
+              {/* Verification docs */}
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wider font-semibold mb-3">Verified Documents</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {p.verified.map(doc => (
+                    <div key={doc} className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                      <svg className="w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-green-400 text-xs font-medium">{doc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Improvements */}
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wider font-semibold mb-3">Ways to Improve Your Score</p>
+                <div className="space-y-2">
+                  {p.improvements.map((imp, i) => (
+                    <div key={i} className="flex items-center justify-between bg-bee-gold/10 border border-bee-gold/20 rounded-xl px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-bee-gold inline-block" />
+                        <span className="text-white/80 text-xs">{imp.tip}</span>
+                      </div>
+                      <span className="text-bee-gold text-xs font-display font-700">{imp.points}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   EMPLOYER DASHBOARD DEMO
+───────────────────────────────────────────── */
+function EmployerDemo() {
+  const [selected, setSelected] = useState([]);
+  const [scoreFilter, setScoreFilter] = useState(70);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [availFilter, setAvailFilter] = useState("Any");
+  const availOptions = ["Any","Full-Time","Part-Time","Weekends + Holidays","Flexible"];
+  const filtered = MOCK_CANDIDATES.filter(c =>
+    c.beeScore >= scoreFilter &&
+    (!verifiedOnly || c.verified) &&
+    (availFilter === "Any" || c.available === availFilter)
+  );
+  const toggleShortlist = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  return (
+    <section id="employer-demo" className="py-24 bg-bee-grey">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Employer Experience</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight">
+            Find the right candidate<br />in minutes, not days.
+          </h2>
+          <p className="text-bee-muted text-lg mt-4 max-w-xl mx-auto">Filter, rank, and shortlist verified student talent with BeeScore-driven matching.</p>
+        </div>
+        <div className="bg-white border border-bee-border rounded-3xl shadow-xl overflow-hidden">
+          {/* Top bar */}
+          <div className="bg-bee-dark px-6 py-4 flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
+            </div>
+            <div className="flex-1 mx-4 bg-white/10 rounded-md px-3 py-1 text-xs text-white/40 font-mono">busybee.co.za / employer / search</div>
+            <div className="flex items-center gap-2 text-xs text-white/40">
+              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+              Amara Properties · Employer Account
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
+            {/* Filter sidebar */}
+            <div className="bg-bee-grey border-r border-bee-border p-6 space-y-6">
+              <div>
+                <p className="font-display font-600 text-bee-dark text-sm uppercase tracking-wider mb-4">Role Details</p>
+                <div className="space-y-3">
+                  <input className="w-full bg-white border border-bee-border rounded-lg px-3 py-2.5 text-sm text-bee-dark placeholder-bee-muted focus:outline-none focus:border-bee-gold" placeholder="Role type e.g. Waiter, Barista" defaultValue="Front of House" />
+                  <input className="w-full bg-white border border-bee-border rounded-lg px-3 py-2.5 text-sm text-bee-dark placeholder-bee-muted focus:outline-none focus:border-bee-gold" placeholder="Location" defaultValue="Cape Town, CBD" />
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-600 text-bee-dark text-sm uppercase tracking-wider mb-3">Availability</p>
+                <div className="space-y-1.5">
+                  {availOptions.map(opt => (
+                    <button key={opt} onClick={() => setAvailFilter(opt)}
+                      className={`w-full text-left text-xs font-medium px-3 py-2 rounded-lg transition-colors ${availFilter === opt ? 'bg-bee-dark text-bee-gold' : 'text-bee-muted hover:bg-bee-border hover:text-bee-dark'}`}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <p className="font-display font-600 text-bee-dark text-sm uppercase tracking-wider">Min BeeScore</p>
+                  <span className="text-bee-amber font-display font-700 text-sm">{scoreFilter}+</span>
+                </div>
+                <input type="range" min={50} max={95} value={scoreFilter} onChange={e => setScoreFilter(Number(e.target.value))}
+                  className="w-full accent-amber-500" />
+                <div className="flex justify-between text-xs text-bee-muted mt-1"><span>50</span><span>95</span></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="font-display font-600 text-bee-dark text-sm">Verified Only</p>
+                <button onClick={() => setVerifiedOnly(v => !v)}
+                  className={`w-10 h-6 rounded-full transition-colors relative ${verifiedOnly ? 'bg-bee-gold' : 'bg-bee-border'}`}>
+                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${verifiedOnly ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="pt-2">
+                <button className="w-full bg-bee-dark text-bee-gold font-semibold text-sm py-3 rounded-xl hover:bg-bee-charcoal transition-colors">
+                  Search Candidates
+                </button>
+              </div>
+            </div>
+            {/* Results */}
+            <div className="col-span-2 p-6 space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-display font-600 text-bee-dark text-sm">{filtered.length} Matches Found</p>
+                <p className="text-xs text-bee-muted">Sorted by BeeScore ↓</p>
+              </div>
+              {filtered.length === 0 && (
+                <div className="text-center py-12 text-bee-muted">
+                  <p className="text-2xl mb-2">🔍</p>
+                  <p className="text-sm">No candidates match your current filters.</p>
+                </div>
+              )}
+              {filtered.sort((a,b) => b.beeScore - a.beeScore).map((c, i) => (
+                <div key={c.id} className={`rounded-2xl border p-5 transition-all cursor-pointer ${selected.includes(c.id) ? 'border-bee-gold bg-bee-light shadow-md' : 'border-bee-border bg-white hover:border-bee-gold/40'}`}
+                  onClick={() => toggleShortlist(c.id)}>
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-display font-700 text-lg flex-shrink-0" style={{background: c.color}}>{c.avatar}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-display font-700 text-bee-dark text-base">{c.name}</p>
+                          <p className="text-bee-muted text-xs mt-0.5">{c.role} · {c.university}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <div className="bg-bee-dark text-bee-gold font-display font-700 text-sm px-3 py-1.5 rounded-lg">
+                            {c.beeScore}
+                          </div>
+                          {c.verified && <span className="text-xs text-green-600 font-medium bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">✓ Verified</span>}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {c.skills.slice(0,3).map(s => (
+                          <span key={s} className="text-xs bg-bee-grey text-bee-charcoal border border-bee-border px-2 py-1 rounded-full">{s}</span>
+                        ))}
+                        {c.skills.length > 3 && <span className="text-xs text-bee-muted px-2 py-1">+{c.skills.length - 3} more</span>}
+                      </div>
+                      <div className="flex gap-4 mt-3 text-xs text-bee-muted">
+                        <span>⏰ {c.available}</span>
+                        <span>📍 {c.location}</span>
+                        <span>🎓 {c.year}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {selected.includes(c.id) && (
+                    <div className="mt-3 pt-3 border-t border-bee-gold/20 flex items-center gap-2">
+                      <span className="text-bee-amber text-xs font-semibold">✓ Added to shortlist</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Shortlist panel */}
+            <div className="bg-bee-grey border-l border-bee-border p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <p className="font-display font-600 text-bee-dark text-sm uppercase tracking-wider">Shortlist</p>
+                <span className="w-5 h-5 rounded-full bg-bee-dark text-bee-gold text-xs font-display font-700 flex items-center justify-center">{selected.length}</span>
+              </div>
+              {selected.length === 0 && (
+                <div className="text-center py-8 text-bee-muted">
+                  <p className="text-2xl mb-2">⬡</p>
+                  <p className="text-xs">Click candidates to shortlist them</p>
+                </div>
+              )}
+              <div className="space-y-3">
+                {MOCK_CANDIDATES.filter(c => selected.includes(c.id)).map(c => (
+                  <div key={c.id} className="bg-white rounded-xl border border-bee-border p-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-display font-700 flex-shrink-0" style={{background: c.color}}>{c.avatar}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-bee-dark text-xs truncate">{c.name.split(' ')[0]}</p>
+                      <p className="text-bee-muted text-xs truncate">{c.beeScore} BeeScore</p>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); toggleShortlist(c.id); }} className="text-bee-muted hover:text-red-400 transition-colors text-xs">✕</button>
+                  </div>
+                ))}
+              </div>
+              {selected.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <button className="w-full bg-bee-dark text-bee-gold font-semibold text-xs py-3 rounded-xl hover:bg-bee-charcoal transition-colors">
+                    Contact Shortlist →
+                  </button>
+                  <button className="w-full bg-white border border-bee-border text-bee-dark font-medium text-xs py-2.5 rounded-xl hover:bg-bee-light transition-colors">
+                    Export List
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   HOW IT WORKS
+───────────────────────────────────────────── */
+function HowItWorks() {
+  const [tab, setTab] = useState("students");
+  const studentSteps = [
+    { icon: "📝", step: "01", title: "Create your profile", desc: "Add your education, skills, experience, availability, and preferences in minutes." },
+    { icon: "📄", step: "02", title: "Verify your credentials", desc: "Upload your ID, proof of registration and transcripts for a verified badge." },
+    { icon: "⬡", step: "03", title: "Grow your BeeScore", desc: "Complete prep modules, fill your profile, and receive employer feedback to boost your score." },
+    { icon: "🌟", step: "04", title: "Get discovered", desc: "Employers actively searching for your skills find and shortlist you. You get notified." },
+  ];
+  const employerSteps = [
+    { icon: "🏢", step: "01", title: "Define your role", desc: "Set the position type, location, availability needs, skills, and any required qualifications." },
+    { icon: "🔎", step: "02", title: "Filter your criteria", desc: "Use BeeScore range, verification status, industry and availability to narrow your search." },
+    { icon: "📋", step: "03", title: "View your shortlist", desc: "See a ranked list of matched candidates with key information visible at a glance." },
+    { icon: "🤝", step: "04", title: "Connect and hire", desc: "Reach out directly to shortlisted candidates — fast, without recruitment agency overhead." },
+  ];
+  const steps = tab === "students" ? studentSteps : employerSteps;
+  return (
+    <section id="how-it-works" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Step by Step</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight mb-8">How it works</h2>
+          <div className="inline-flex rounded-xl border border-bee-border p-1 bg-bee-grey">
+            <button onClick={() => setTab("students")} className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${tab === "students" ? "bg-bee-dark text-bee-gold shadow-sm" : "text-bee-muted hover:text-bee-dark"}`}>
+              For Students
+            </button>
+            <button onClick={() => setTab("employers")} className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${tab === "employers" ? "bg-bee-dark text-bee-gold shadow-sm" : "text-bee-muted hover:text-bee-dark"}`}>
+              For Employers
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+          {steps.map((s, i) => (
+            <div key={i} className="relative">
+              {i < steps.length - 1 && (
+                <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-gradient-to-r from-bee-gold/40 to-transparent z-10 translate-x-6 -translate-x-1" />
+              )}
+              <div className="bg-bee-grey rounded-2xl p-6 border border-bee-border card-hover">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="font-display font-800 text-bee-gold/30 text-3xl">{s.step}</span>
+                </div>
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl mb-4 shadow-sm border border-bee-border">{s.icon}</div>
+                <h3 className="font-display font-600 text-bee-dark text-lg mb-2">{s.title}</h3>
+                <p className="text-bee-muted text-sm leading-relaxed">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   TARGET MARKET
+───────────────────────────────────────────── */
+function TargetMarket() {
+  const industries = [
+    { icon: "🍽", name: "Hospitality", roles: "Waiters, Baristas, Front Desk, Event Staff" },
+    { icon: "🛍", name: "Retail", roles: "Sales Assistants, Stock Control, Cashiers" },
+    { icon: "🏨", name: "Tourism", roles: "Tour Guides, Guest Liaisons, Reservations" },
+    { icon: "💼", name: "Graduate Programs", roles: "Internships, Learnerships, Graduate Roles" },
+    { icon: "🏥", name: "Services", roles: "Admin, Reception, Customer Facing Roles" },
+    { icon: "💡", name: "SMEs", roles: "General entry-level & junior positions" },
+  ];
+  return (
+    <section id="market" className="py-24 bg-bee-dark relative overflow-hidden">
+      <div className="absolute inset-0 dark-mesh" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-bee-gold/30 to-transparent" />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Launch Focus</p>
+            <h2 className="font-display font-700 text-4xl lg:text-5xl text-white leading-tight mb-6">
+              Starting focused.<br />Scaling with purpose.
+            </h2>
+            <p className="text-white/60 text-lg leading-relaxed mb-8">
+              BusyBee launches in Cape Town with a clear target: students, graduates, and entry-level job seekers across hospitality, retail, and service industries. We start tight, build trust, then expand.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-bee-gold/20 border border-bee-gold/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-bee-gold font-display font-700 text-sm">1</span>
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">Cape Town Launch</p>
+                  <p className="text-white/40 text-sm">University students, graduates, SME employers, hospitality & retail sector.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white/50 font-display font-700 text-sm">2</span>
+                </div>
+                <div>
+                  <p className="text-white/70 font-semibold text-sm">South Africa Rollout</p>
+                  <p className="text-white/40 text-sm">Johannesburg, Durban, Pretoria — all major student markets.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white/50 font-display font-700 text-sm">3</span>
+                </div>
+                <div>
+                  <p className="text-white/70 font-semibold text-sm">Broader AI Infrastructure</p>
+                  <p className="text-white/40 text-sm">Expand into graduate programs, learnerships, and broader youth employment.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {industries.map((ind, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 hover:border-bee-gold/30 transition-all">
+                <span className="text-2xl block mb-2">{ind.icon}</span>
+                <p className="font-display font-600 text-white text-sm mb-1">{ind.name}</p>
+                <p className="text-white/40 text-xs leading-relaxed">{ind.roles}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   WHY BUSYBEE
+───────────────────────────────────────────── */
+function WhyBusyBee() {
+  const advantages = [
+    { icon: "⬡", title: "BeeScore trust layer", desc: "A proprietary, continuously updated ranking that replaces gut feel with objective signal." },
+    { icon: "✓", title: "Verified student talent pool", desc: "Every profile can be verified. Employers know who they're actually looking at." },
+    { icon: "⚡", title: "Faster shortlisting", desc: "Go from role brief to shortlisted candidates in under an hour — not days." },
+    { icon: "🎯", title: "Youth-specific focus", desc: "Built entirely for the entry-level and student hiring market. Not an afterthought." },
+    { icon: "💡", title: "Lower hiring friction", desc: "No agency fees, no long intake processes. Find and connect directly." },
+    { icon: "🌐", title: "Network effects", desc: "As the platform grows, the talent pool deepens and matching improves for everyone." },
+  ];
+  return (
+    <section id="why-busybee" className="py-24 bg-bee-grey">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Why BusyBee</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight">
+            Built differently.<br />By design.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {advantages.map((a, i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 border border-bee-border card-hover shadow-sm">
+              <div className="w-12 h-12 bg-bee-light rounded-xl flex items-center justify-center text-2xl mb-4 font-display font-700 text-bee-gold">{a.icon}</div>
+              <h3 className="font-display font-600 text-bee-dark text-lg mb-2">{a.title}</h3>
+              <p className="text-bee-muted text-sm leading-relaxed">{a.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   FUTURE VISION
+───────────────────────────────────────────── */
+function FutureVision() {
+  const milestones = [
+    { phase: "Phase 1", title: "Cape Town Launch", desc: "Student talent pool. Employer search dashboard. BeeScore rollout. Verification system.", active: true },
+    { phase: "Phase 2", title: "National Expansion", desc: "Johannesburg, Durban, Pretoria. University partnership program. Learnership integration.", active: false },
+    { phase: "Phase 3", title: "Platform Deepening", desc: "Employer ATS integrations. Candidate prep academy. Graduate tracking and alumni network.", active: false },
+    { phase: "Phase 4", title: "AI Recruitment Infrastructure", desc: "South Africa's leading youth employment data layer. Broader industry coverage. Enterprise API.", active: false },
+  ];
+  return (
+    <section id="vision" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">The Roadmap</p>
+          <h2 className="font-display font-700 text-4xl lg:text-5xl text-bee-dark leading-tight">
+            Starting small.<br />Thinking big.
+          </h2>
+          <p className="text-bee-muted text-lg mt-4 max-w-xl mx-auto">BusyBee is designed to grow. Every student hired, every employer served, every score calculated makes the platform stronger.</p>
+        </div>
+        <div className="relative">
+          <div className="absolute left-8 top-8 bottom-8 w-px bg-bee-border hidden md:block" />
+          <div className="space-y-6">
+            {milestones.map((m, i) => (
+              <div key={i} className={`md:ml-16 relative rounded-2xl border p-6 transition-all ${m.active ? 'bg-bee-dark border-bee-gold/30 shadow-lg' : 'bg-bee-grey border-bee-border'}`}>
+                <div className={`absolute -left-20 top-6 w-8 h-8 rounded-full border-2 flex items-center justify-center hidden md:flex ${m.active ? 'bg-bee-gold border-bee-gold text-bee-dark' : 'bg-white border-bee-border text-bee-muted'}`}>
+                  <span className="font-display font-700 text-xs">{i + 1}</span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${m.active ? 'text-bee-gold' : 'text-bee-muted'}`}>{m.phase}</p>
+                    <h3 className={`font-display font-700 text-xl mb-2 ${m.active ? 'text-white' : 'text-bee-dark'}`}>{m.title}</h3>
+                    <p className={`text-sm leading-relaxed ${m.active ? 'text-white/60' : 'text-bee-muted'}`}>{m.desc}</p>
+                  </div>
+                  {m.active && <span className="flex-shrink-0 bg-bee-gold text-bee-dark text-xs font-semibold px-3 py-1.5 rounded-full">Now</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CTA / WAITLIST
+───────────────────────────────────────────── */
+function Waitlist() {
+  const [role, setRole] = useState("student");
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (email) setSubmitted(true);
+  };
+  return (
+    <section id="waitlist" className="py-24 bg-bee-dark relative overflow-hidden">
+      <div className="absolute inset-0 dark-mesh" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-bee-gold/30 to-transparent" />
+      <div className="absolute -top-32 -right-32 w-96 h-96 bg-bee-gold/10 rounded-full blur-3xl" />
+      <div className="max-w-3xl mx-auto px-6 relative z-10 text-center">
+        <p className="text-bee-gold text-sm font-semibold uppercase tracking-widest mb-4">Early Access</p>
+        <h2 className="font-display font-800 text-4xl lg:text-6xl text-white leading-tight mb-6">
+          Be first in the hive.
+        </h2>
+        <p className="text-white/60 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+          BusyBee is launching in Cape Town. Join the waitlist now — whether you're a student ready to be discovered, or an employer looking to hire smarter.
+        </p>
+        {!submitted ? (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+            <div className="flex rounded-xl overflow-hidden border border-white/10 mb-6 inline-flex w-full max-w-xs mx-auto">
+              <button onClick={() => setRole("student")} className={`flex-1 py-3 text-sm font-semibold transition-all ${role === "student" ? "bg-bee-gold text-bee-dark" : "text-white/50 hover:text-white"}`}>
+                I'm a Student
+              </button>
+              <button onClick={() => setRole("employer")} className={`flex-1 py-3 text-sm font-semibold transition-all ${role === "employer" ? "bg-bee-gold text-bee-dark" : "text-white/50 hover:text-white"}`}>
+                I'm an Employer
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
+              <input
+                type="text" placeholder="Your full name"
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-bee-gold/50 focus:bg-white/15 transition-all"
+              />
+              {role === "employer" && (
+                <input
+                  type="text" placeholder="Company / organisation name"
+                  className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-bee-gold/50 focus:bg-white/15 transition-all"
+                />
+              )}
+              {role === "student" && (
+                <input
+                  type="text" placeholder="University / institution"
+                  className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-bee-gold/50 focus:bg-white/15 transition-all"
+                />
+              )}
+              <input
+                type="email" placeholder="Email address" required value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-bee-gold/50 focus:bg-white/15 transition-all"
+              />
+              <button type="submit" className="w-full bg-bee-gold hover:bg-bee-amber text-bee-dark font-display font-700 py-4 rounded-xl transition-all text-sm shadow-lg hover:shadow-bee-gold/25 hover:shadow-xl">
+                {role === "student" ? "Join as a Student →" : "Join as an Employer →"}
+              </button>
+            </form>
+            <p className="text-white/20 text-xs mt-4">No spam. No commitment. Early access only.</p>
+          </div>
+        ) : (
+          <div className="bg-white/5 border border-bee-gold/30 rounded-2xl p-12 text-center">
+            <div className="w-16 h-16 bg-bee-gold rounded-2xl flex items-center justify-center text-bee-dark text-3xl mx-auto mb-4 font-display font-800">⬡</div>
+            <p className="font-display font-700 text-white text-2xl mb-2">You're on the list.</p>
+            <p className="text-white/50 text-sm">We'll be in touch when BusyBee opens in Cape Town. Watch this space.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────────── */
+function Footer() {
+  const sections = [
+    { heading: "Platform", links: ["For Students", "For Employers", "BeeScore", "Verification", "How It Works"] },
+    { heading: "Company", links: ["About", "Blog", "Careers", "Press", "Contact"] },
+    { heading: "Legal", links: ["Privacy Policy", "Terms of Use", "Cookie Policy"] },
+  ];
+  return (
+    <footer className="bg-bee-dark border-t border-white/10">
+      <div className="max-w-7xl mx-auto px-6 pt-16 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 pb-12 border-b border-white/10">
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-bee-gold rounded-lg flex items-center justify-center">
+                <span className="text-bee-dark font-display font-800 text-sm">B</span>
+              </div>
+              <span className="font-display font-700 text-xl text-white tracking-tight">BusyBee</span>
+            </div>
+            <p className="text-white/40 text-sm leading-relaxed max-w-xs mb-6">
+              South Africa's student hiring and employability platform. Helping students get seen. Helping employers hire smarter.
+            </p>
+            <div className="flex gap-3">
+              {["𝕏", "in", "f", "📧"].map((icon, i) => (
+                <div key={i} className="w-9 h-9 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg flex items-center justify-center text-white/50 hover:text-white cursor-pointer transition-all text-sm">
+                  {icon}
+                </div>
+              ))}
+            </div>
+          </div>
+          {sections.map(s => (
+            <div key={s.heading}>
+              <p className="text-white font-display font-600 text-sm mb-4">{s.heading}</p>
+              <div className="space-y-2.5">
+                {s.links.map(l => (
+                  <p key={l} className="text-white/40 text-sm hover:text-white/70 cursor-pointer transition-colors">{l}</p>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-white/30 text-xs">© 2025 BusyBee Technologies (Pty) Ltd. All rights reserved. Cape Town, South Africa.</p>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-bee-gold animate-pulse-slow" />
+            <p className="text-white/30 text-xs">Cape Town Beta — Accepting Early Applications</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   ROOT APP
+───────────────────────────────────────────── */
+function App() {
+  return (
+    <div className="overflow-x-hidden">
+      <Navbar />
+      <Hero />
+      <Problem />
+      <Solution />
+      <BeeScore />
+      <Verification />
+      <StudentDemo />
+      <EmployerDemo />
+      <HowItWorks />
+      <TargetMarket />
+      <WhyBusyBee />
+      <FutureVision />
+      <Waitlist />
+      <Footer />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
